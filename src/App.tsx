@@ -3,6 +3,7 @@ import { useStore, type Tab } from "./store";
 import { isMobile } from "./environment";
 import { DesktopRail, DesktopTitleBar } from "./components/DesktopChrome";
 import ResizeHandles from "./components/ResizeHandles";
+import { isTauriHost } from "./platform/transport";
 import Plugins from "./pages/Plugins";
 import { HostProvider, useHost } from "./plugins/HostContext";
 import { BrowseFrame, PluginRecommendations, PluginCategory, PluginSearch } from "./plugins/BrowsePages";
@@ -22,7 +23,8 @@ import "./plugins/watch-experience.css";
 import "./plugins/refined-pages.css";
 import ImmersiveHome from "./plugins/ImmersiveHome";
 import { runBack } from "./back";
-import { addPluginListener, invoke } from "@tauri-apps/api/core";
+import { addPluginListener } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "./platform/transport";
 export default function App() { return <HostProvider><Application/></HostProvider>; }
 function Application() {
   const app=useStore(),host=useHost(),[collapsed,setCollapsed]=useState(false),top=app.stack[app.stack.length-1];
@@ -52,7 +54,7 @@ function Application() {
       {pendingUpdates(host.updates).length>0&&!top&&<div className="hpp-global-updates" role="status"><span>{pendingUpdates(host.updates).length} 个插件有更新{host.updates.policy.autoInstall?"，将在播放结束后安装":""}</span><button onClick={()=>manage()}>查看插件更新</button></div>}
     </main></div>
     {isMobile&&!top&&!app.fs&&!app.clean&&!app.watching&&<TabBar/>}
-    {app.platform==="windows"&&<ResizeHandles/>}
+    {isTauriHost&&app.platform==="windows"&&<ResizeHandles/>}
   </div>;
 }
 function ContentRoute({ page, active }: { page: Extract<import("./store").Page, { kind: "live" | "articles" | "article" | "feed" | "recommendations" }>; active: boolean }) {

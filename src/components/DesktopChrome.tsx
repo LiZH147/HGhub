@@ -2,25 +2,29 @@ import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useStore, type Tab } from "../store";
 import { APP_VERSION } from "../environment";
+import { isTauriHost } from "../platform/transport";
 import {
   IPin, IClose, IGrid, IGridF, IHome, IHomeF, IMinus, IMoon, IRestore, ISearch, ISettings, ISidebar, ICpu,
   ISquare, ISun, IUser, IUserF, Logo,
 } from "../icons";
 
-const appWindow = () => getCurrentWindow();
+/** A browser tab has no window to control, so the same shell renders without caption buttons. */
+const appWindow = () => (isTauriHost ? getCurrentWindow() : null);
 
 export function PlaybackWindowActions() {
   const { platform } = useStore();
   const [pinned, setPinned] = useState(false), [pending, setPending] = useState(false), [error, setError] = useState("");
-  useEffect(() => { let live = true; void appWindow().isAlwaysOnTop().then(v => { if(live) setPinned(v); }).catch(()=>{}); return()=>{live=false;}; }, []);
-  const togglePin = async () => { setPending(true); setError(""); try { await appWindow().setAlwaysOnTop(!pinned); setPinned(!pinned); } catch { setError("窗口置顶设置失败，请重试"); } finally { setPending(false); } };
+  useEffect(() => { const win = appWindow(); if (!win) return; let live = true; void win.isAlwaysOnTop().then(v => { if(live) setPinned(v); }).catch(()=>{}); return()=>{live=false;}; }, []);
+  const win = appWindow();
+  if (!win) return null;
+  const togglePin = async () => { setPending(true); setError(""); try { await win.setAlwaysOnTop(!pinned); setPinned(!pinned); } catch { setError("窗口置顶设置失败，请重试"); } finally { setPending(false); } };
   return <div className="win-caption-buttons hg-watch-window-actions">
     {error&&<span role="status" className="hg-window-error">{error}</span>}
     <button aria-label={pinned?"取消窗口置顶":"窗口置顶"} aria-pressed={pinned} disabled={pending} onClick={()=>void togglePin()}><IPin size={17}/></button>
     {platform !== "macos" && <>
-    <button aria-label="最小化" onClick={() => appWindow().minimize().catch(() => {})}><IMinus size={16}/></button>
-    <button aria-label="最大化或还原" onClick={() => appWindow().toggleMaximize().catch(() => {})}><ISquare size={14}/></button>
-    <button className="win-close" aria-label="关闭窗口" onClick={() => appWindow().close().catch(() => {})}><IClose size={17}/></button></>}
+    <button aria-label="最小化" onClick={() => win.minimize().catch(() => {})}><IMinus size={16}/></button>
+    <button aria-label="最大化或还原" onClick={() => win.toggleMaximize().catch(() => {})}><ISquare size={14}/></button>
+    <button className="win-close" aria-label="关闭窗口" onClick={() => win.close().catch(() => {})}><IClose size={17}/></button></>}
   </div>;
 }
 
@@ -29,22 +33,24 @@ export function DesktopTitleBar({ collapsed, onToggle }: { collapsed: boolean; o
   const [maxed, setMaxed] = useState(false);
   /* macOS 原生全屏：红绿灯被系统隐藏，标题栏左侧 84px 让位要收回（见 index.css） */
   const [nativeFs, setNativeFs] = useState(false);
+  const win = appWindow();
 
   useEffect(() => {
+    if (!win) return;
     let un: (() => void) | undefined;
     const sync = () => {
-      appWindow().isMaximized().then(setMaxed).catch(() => {});
-      appWindow().isFullscreen().then(setNativeFs).catch(() => {});
+      win.isMaximized().then(setMaxed).catch(() => {});
+      win.isFullscreen().then(setNativeFs).catch(() => {});
     };
     sync();
-    appWindow().onResized(sync)
+    win.onResized(sync)
       .then((f: () => void) => { un = f; }).catch(() => {});
     return () => { un?.(); };
-  }, []);
+  }, [win]);
 
   return (
     <header className={`win-titlebar ${nativeFs ? "is-native-fs" : ""}`} data-tauri-drag-region
-      onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest("button")) appWindow().toggleMaximize().catch(() => {}); }}>
+      onDoubleClick={(e) => { if (!win || (e.target as HTMLElement).closest("button")) return; win.toggleMaximize().catch(() => {}); }}>
       <div className="win-wordmark" data-tauri-drag-region>
         <Logo size={24} />
         <span>HG<span className="win-wordmark-light">hub</span></span>
@@ -60,13 +66,13 @@ export function DesktopTitleBar({ collapsed, onToggle }: { collapsed: boolean; o
         <ISearch size={17} strokeWidth={1.7} />
       </button>
       {/* macOS 用系统自带的红绿灯（titleBarStyle: Overlay），不画自绘按钮 */}
-      {platform !== "macos" && (
+      {win && platform !== "macos" && (
         <div className="win-caption-buttons">
-          <button aria-label="最小化" onClick={() => appWindow().minimize().catch(() => {})}><IMinus size={15} strokeWidth={1.5} /></button>
-          <button aria-label={maxed ? "还原" : "最大化"} onClick={() => appWindow().toggleMaximize().catch(() => {})}>
+          <button aria-label="最小化" onClick={() => win.minimize().catch(() => {})}><IMinus size={15} strokeWidth={1.5} /></button>
+          <button aria-label={maxed ? "还原" : "最大化"} onClick={() => win.toggleMaximize().catch(() => {})}>
             {maxed ? <IRestore size={14} strokeWidth={1.5} /> : <ISquare size={14} strokeWidth={1.5} />}
           </button>
-          <button className="win-close" aria-label="关闭" onClick={() => appWindow().close().catch(() => {})}><IClose size={16} strokeWidth={1.5} /></button>
+          <button className="win-close" aria-label="关闭" onClick={() => win.close().catch(() => {})}><IClose size={16} strokeWidth={1.5} /></button>
         </div>
       )}
     </header>
@@ -79,6 +85,9 @@ export function DesktopRail({ collapsed }: { collapsed: boolean }) {
   const top = stack[stack.length - 1];
   const railPage = top?.kind === "settings" ? "settings" : top?.kind === "plugins" ? "plugins" : null;
   const onTab = (key: Tab | "search") => !railPage && tab === key;
+  const target = isTauriHost
+    ? platform === "macos" ? "macOS" : platform === "linux" ? "Linux" : platform === "android" ? "Android" : platform === "ios" ? "iOS" : "Windows"
+    : "Web";
   const items: { key: Tab; label: string; Icon: typeof IHome; Filled: typeof IHomeF }[] = [
     { key: "home", label: "首页", Icon: IHome, Filled: IHomeF },
     { key: "category", label: "分类", Icon: IGrid, Filled: IGridF },
@@ -122,7 +131,7 @@ export function DesktopRail({ collapsed }: { collapsed: boolean }) {
               <small>收藏与观看进度</small>
             </span>
           </button>
-          <span className="win-sidebar-version">HGhub for {platform === "macos" ? "macOS" : platform === "linux" ? "Linux" : "Windows"} {APP_VERSION}</span>
+          <span className="win-sidebar-version">HGhub for {target} {APP_VERSION}</span>
         </div>
       </div>
     </nav>

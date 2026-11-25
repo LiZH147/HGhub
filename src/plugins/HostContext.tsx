@@ -3,6 +3,7 @@ import { onPluginAuthFailure, onPluginAuthSuccess, pluginCommand, pluginError, t
 import type { MediaItem } from "./protocol";
 import { clearMetadataCache } from './metadataCache';
 import { emptyUpdateState, pendingUpdates, tickPluginUpdates, type UpdateState } from "./updateClient";
+import { requestId } from "../platform/ids";
 
 export interface LocalProgress { pluginId: string; mediaId: string; playlistId?: string; episodeId: string; positionSec: number; durationSec?: number; at: number }
 export interface LibraryEntry { pluginId: string; mediaId: string; item: MediaItem; favorite: boolean; tracking: boolean; updatedAt: number; lastProgress?: LocalProgress; latestLabel?: string }
@@ -34,7 +35,7 @@ export function HostProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let live = true;
     // StrictMode can subscribe twice; one host startup operation belongs to this app lifetime.
-    if (!startup.current) startup.current = pluginCommand<UpdateState>("updates.startup", { requestId: crypto.randomUUID() });
+    if (!startup.current) startup.current = pluginCommand<UpdateState>("updates.startup", { requestId: requestId() });
     void startup.current.then(state => { if (live) setUpdates(state); }).catch(e => { if (live) setError(pluginError(e)); });
     const changed = () => { void refreshUpdates().catch(e => setError(pluginError(e))); };
     window.addEventListener("hpp.updates.changed", changed);

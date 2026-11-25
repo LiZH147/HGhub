@@ -4,7 +4,7 @@ import { IBack, IChevR, IGrid, ISettings, IMoon, ISun, IVolMute, IPlayF, IRefres
 import type { ReactNode } from "react";
 import { Toggle } from "../components/ui";
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "../platform/transport";
 import { checkAppUpdate, type AppRelease } from "../appUpdates";
 import { useStore } from "../store";
 import { APP_VERSION, isMobile } from "../environment";

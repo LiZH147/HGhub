@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { pluginCommand, releaseMedia, type InstalledPlugin } from "./client";
 import { readMetadata } from './metadataCache';
+import { requestId as newRequestId } from "../platform/ids";
 
 /** Own requests for the lifetime of a view, including requests omitting ctx.signal. */
 export function usePluginRequests() {
@@ -19,7 +20,7 @@ export function usePluginRequests() {
   }, []);
   const request = useCallback(async <T,>(action: string, params: Record<string, unknown> = {}): Promise<T> => {
     if (!mounted.current) throw { code: "CANCELLED", message: "页面已关闭" };
-    const requestId = crypto.randomUUID(); pending.current.add(requestId);
+    const requestId = newRequestId(); pending.current.add(requestId);
     try {
       const result = await pluginCommand<T>(action, { ...params, requestId });
       if (!mounted.current) {

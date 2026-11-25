@@ -1,4 +1,5 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "./platform/transport";
 import { platform } from "./environment";
 
 /** Rotate the Android activity itself; browser-only playback uses the Screen API. */

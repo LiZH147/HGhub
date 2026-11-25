@@ -1,4 +1,5 @@
 import { pluginCommand, type InstalledPlugin } from './client';
+import { requestId } from "../platform/ids";
 
 // Only provider metadata is cached. Playback URLs and sessions are always resolved live.
 const TTL = 5 * 60_000, LIMIT = 128;
@@ -38,7 +39,7 @@ export async function readMetadata<T>(plugin: InstalledPlugin, method: string, a
     const pending = entries.get(id)?.pending;
     if (pending) return pending as Promise<T>;
   }
-  const entry: Entry = { expires: Date.now() + TTL, requestId: crypto.randomUUID() };
+  const entry: Entry = { expires: Date.now() + TTL, requestId: requestId() };
   // A shared read survives route changes; its result may only update a live consumer.
   entry.pending = pluginCommand<T>('call', { id: plugin.meta.id, method, args, requestId: entry.requestId }, { notifyAuth }).then(value => {
     if (entries.get(id) === entry) { entry.value = value; entry.expires = Date.now() + TTL; delete entry.pending; delete entry.requestId; }

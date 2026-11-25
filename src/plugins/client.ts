@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "../platform/transport";
 import { probeMediaCapabilities } from "./mediaCapabilities";
 import type { PlaybackInfo, PlaybackServer, PluginFailure, PluginMeta, Codec, MediaFormat } from "./protocol";
 

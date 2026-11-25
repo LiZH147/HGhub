@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "../platform/transport";
 import { useEffect, useRef, useState } from "react";
 import { pluginCommand, pluginError, type InstalledPlugin } from "./client";
 import type { PluginFailure } from "./protocol";

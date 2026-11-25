@@ -1,4 +1,5 @@
 import { pluginCommand } from "./client";
+import { requestId } from "../platform/ids";
 
 export interface ProgressReport {
   mediaId: string; episodeId: string; positionSec: number; durationSec?: number;
@@ -38,7 +39,7 @@ export function createProgressReporter(mediaId: string, send: (report: ProgressR
 export function pluginProgressReporter(pluginId: string, mediaId: string, enabled: boolean) {
   return createProgressReporter(mediaId, report => {
     if (enabled) void pluginCommand("call", {
-      id: pluginId, method: "progress.report", args: report, requestId: crypto.randomUUID(),
+      id: pluginId, method: "progress.report", args: report, requestId: requestId(),
     }, { notifyAuth: false }).catch(() => {});
   });
 }

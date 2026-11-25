@@ -3,7 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AppProvider } from "./store";
-import { invoke } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "./platform/transport";
 
 
 /* 运行期错误统一落到 debug.log，便于自查 */

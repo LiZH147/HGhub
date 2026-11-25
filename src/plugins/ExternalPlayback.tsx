@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { hostInvoke as invoke } from '../platform/transport';
 import { pluginError, type ExternalMedia } from './client';
 
 export default function ExternalPlayback({ target }: { target: ExternalMedia }) {

@@ -1,4 +1,5 @@
 import type { PreparedMedia } from './client';
+import { requestId } from "../platform/ids";
 
 type Entry = {
   key: string; requestId: string; result?: PreparedMedia; expires: number;
@@ -25,7 +26,7 @@ export class NextEpisode {
       this.warm(this.next); return;
     }
     this.clear();
-    const entry: Entry = { key, requestId: crypto.randomUUID(), expires: this.now() + 90_000,
+    const entry: Entry = { key, requestId: requestId(), expires: this.now() + 90_000,
       cancelled: false, claimed: false, params, warmAttempts: 0, warmAfter: 0, warmed: false,
       promise: Promise.resolve(undefined) };
     this.next = entry; this.owned.add(entry);

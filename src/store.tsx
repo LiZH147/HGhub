@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { hostInvoke as invoke } from "./platform/transport";
 import { platform } from "./environment";
 import type { SourceStart } from "./plugins/sourceMatching";
+import { requestId } from "./platform/ids";
 export type Tab = "home" | "category" | "search" | "profile";
 export type Theme = "dark" | "light";
 export type PageInput = { kind: "plugins"; focusId?: string } | { kind: "settings" } | { kind: "media"; pluginId: string; mediaId: string; start?: SourceStart } | { kind: "section"; pluginId: string; sectionId: string; title?: string } | { kind: "live"; pluginId: string } | { kind: "articles"; pluginId: string } | { kind: "article"; pluginId: string; articleId: string } | { kind: "feed"; pluginId: string } | { kind: "recommendations"; pluginId: string };
@@ -24,8 +25,8 @@ function useApplication() {
   useEffect(() => { void invoke<{strict_security:boolean}>("app_boot").then(v => { setStrict(v.strict_security); setSecurityReady(true); }).catch(() => setError("无法读取网络设置")); }, []);
   const setStrictSecurity = useCallback(async (strict: boolean) => { setPending(true); try { setStrict(await invoke<boolean>("security_set", { strict })); } finally { setPending(false); } }, []);
   const setTab = useCallback((tab: Tab) => { setTabRaw(tab); setStack([]); }, []);
-  const push = useCallback((p: PageInput) => setStack(old => [...old, { ...p, key: crypto.randomUUID() }]), []);
-  const replace = useCallback((p: PageInput) => setStack(old => [...old.slice(0, -1), { ...p, key: crypto.randomUUID() }]), []);
+  const push = useCallback((p: PageInput) => setStack(old => [...old, { ...p, key: requestId() }]), []);
+  const replace = useCallback((p: PageInput) => setStack(old => [...old.slice(0, -1), { ...p, key: requestId() }]), []);
   const pop = useCallback(() => setStack(old => old.slice(0, -1)), []);
   return { watching, setWatching, platform, theme, setTheme, tab, setTab, stack, push, replace, pop, muteOnStartup, setMuteOnStartup, volume, setVolume, muted, setMuted, theater, setTheater, fs, setFs, clean, setClean, strictSecurity, strictSecurityReady, securityPending, setStrictSecurity, error };
 }
