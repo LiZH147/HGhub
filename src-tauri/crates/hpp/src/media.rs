@@ -148,6 +148,11 @@ impl MediaSessions {
             s.cancel.cancel();
         }
     }
+    /// Fix the media prefix before the first prepare; the caller then serves the router itself.
+    /// Returns false once the prefix is already fixed.
+    pub fn use_public_base(&self, base: &str) -> bool {
+        self.base.set(base.trim_end_matches('/').to_string()).is_ok()
+    }
     pub async fn start(manager: &Arc<PluginManager>) -> Result<String> {
         let weak = Arc::downgrade(manager);
         let shutdown = manager.sessions.shutdown.clone();
@@ -158,12 +163,7 @@ impl MediaSessions {
                 let listener =
                     tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
                 let base = format!("http://127.0.0.1:{}", listener.local_addr()?.port());
-                let router = Router::new()
-                    .route(
-                        "/hpp/:session/:resource",
-                        get(serve_resource).head(serve_resource).options(preflight),
-                    )
-                    .with_state(weak);
+                let router = routes(weak);
                 tokio::spawn(async move {
                     let _ = axum::serve(listener, router)
                         .with_graceful_shutdown(shutdown.cancelled_owned())
@@ -174,6 +174,18 @@ impl MediaSessions {
             .await
             .cloned()
     }
+}
+fn routes(weak: std::sync::Weak<PluginManager>) -> Router {
+    Router::new()
+        .route(
+            "/hpp/:session/:resource",
+            get(serve_resource).head(serve_resource).options(preflight),
+        )
+        .with_state(weak)
+}
+/// Media routes for hosts that serve the resources themselves; pair with MediaSessions::use_public_base.
+pub fn router(manager: &Arc<PluginManager>) -> Router {
+    routes(Arc::downgrade(manager))
 }
 impl Drop for MediaSessions {
     fn drop(&mut self) {

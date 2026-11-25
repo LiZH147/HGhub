@@ -39,8 +39,8 @@ regex = "1"
 jni = "0.21"
 ndk-context = "0.1"
 
-# rquickjs does not ship mobile bindings; generate them against the target SDK.
-[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+# rquickjs ships bindings only for its prebuilt targets; other platforms generate them locally.
+[target.'cfg(any(target_os = "android", target_os = "ios", target_os = "freebsd"))'.dependencies]
 rquickjs = { version = "0.12.2", features = ["bindgen"] }
 
 [dev-dependencies]
