@@ -9,6 +9,10 @@
 
 ## 已落地
 
+2026-11-28 偏好与本地片库：新增启动页面、首页自动播放开关、可留空的首页来源及分类卡片列数。非首页启动和未手动开始的禁用自动播放首页不发起首页内容与播放请求。桌面窗口保存普通逻辑尺寸与最大化状态，全屏/最小化不覆盖普通尺寸；Windows 原生测试窗口已验证普通尺寸、最大化恢复及全屏不覆盖尺寸。Chromium 67 实测确认搜索封面比例、倍速按钮居中及点击修复。
+
+内部 IPC `hpp_manage("library.history.remove", { items: [{ pluginId, mediaId }] })` 接受 1–500 个作品键；整批校验后原子删除这些作品全部分集的本地进度与 `lastProgress`，保留收藏、追更和关联来源。空批次、非法 ID 或超过上限返回 `INVALID_ARGUMENT`，不部分删除。此命令不属于插件 API，无需更改插件类型。验证入口：`content_library` Rust 测试与 `node scripts/test-plugins.mjs --preferences`；浏览器集成不替代 macOS/Linux/Android/iOS 设备验收。
+
 2026-11-20 字幕补验：真实 QuickJS 与 loopback 代理已验证 SRT 转 UTF-8 VTT、轨道元信息、转换后 Range/HEAD、坏字幕隔离及会话释放。真实来源单条 SRT 经代理返回 200 / text/vtt，1778 条 cue、112299 字节；这不替代设备上的字幕显示与切换验收。编码按 BOM、响应 charset、UTF-8 顺序处理，ASS 忽略；多条默认字幕优先当前解析器的首条，否则源的首条。
 
 | 层 | 实现 |
