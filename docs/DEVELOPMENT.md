@@ -41,6 +41,34 @@ Android 构建另需 JDK 17、Android SDK / NDK 和 libclang。设置 `JAVA_HOME
 - 依赖安装脚本的允许列表见 `package.json` 与 `pnpm-workspace.yaml`。
 - 验证命令及当前支持范围见[实现进度](plugin-protocol/IMPLEMENTATION.md)。
 
+## Android 出包（GitHub Actions）
+
+本机不装 Android SDK 也能出包：推送分支后在 Actions 里选 **Android APK** → Run workflow。
+
+- `Use workflow from` 决定打包的代码分支；也可以用 `ref` 输入填分支名、tag 或 commit。
+- `target` 选 CPU 架构（手机一般是 aarch64），`build_type` 选 debug 或 release。
+- 产物在本次 run 的 Artifacts 里，是含 APK 的 zip。
+
+debug 包用 runner 生成的调试密钥签名，不同次构建的密钥不同，覆盖安装会失败。需要可升级的正式包时用 release，并在仓库 Secrets 里配置四个值：
+
+```powershell
+# 生成一次并妥善备份：丢失后无法用同一签名继续升级
+keytool -genkeypair -v -keystore hghub-release.jks -alias hghub -keyalg RSA -keysize 2048 -validity 10000
+certutil -encode hghub-release.jks keystore.b64   # 去掉首尾两行后再填入 Secret
+```
+
+| Secret | 内容 |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | keystore 文件的 base64 |
+| `ANDROID_KEY_ALIAS` | 上面的 `-alias` 值 |
+| `ANDROID_KEY_PASSWORD` | 该别名的口令 |
+| `ANDROID_STORE_PASSWORD` | keystore 口令 |
+
+工作流会解码 keystore 并用 `scripts/android-signing.py` 给生成的 gradle 工程注入 `signingConfigs`（`src-tauri/gen/android` 每次重新生成，所以不提交签名配置）。
+
+两点注意：release 沿用 Tauri 模板的 R8 压缩配置，首次上线前要在真机上验证；`versionCode` 由 `package.json` 版本推导，升级安装前先提版本号。
+
+
 ## 开发者文档站
 
 ```bash
