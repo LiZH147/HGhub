@@ -57,10 +57,37 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Generate the Android project
         run: pnpm tauri android init --ci
+      - name: Configure release signing
+        if: ${{ (inputs.build_type || 'debug') == 'release' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          for name in KEYSTORE_BASE64 KEY_ALIAS KEY_PASSWORD STORE_PASSWORD; do
+            eval "value=\$$name"
+            if [ -z "$value" ]; then
+              echo "::error::Missing repository secret ANDROID_$name; a release APK needs all four signing secrets."
+              exit 1
+            fi
+          done
+          KEYSTORE="$PWD/src-tauri/gen/android/app/release.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+          {
+            echo "HGHUB_KEYSTORE=$KEYSTORE"
+            echo "HGHUB_KEY_ALIAS=$KEY_ALIAS"
+            echo "HGHUB_KEY_PASSWORD=$KEY_PASSWORD"
+            echo "HGHUB_STORE_PASSWORD=$STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+          python3 scripts/android-signing.py src-tauri/gen/android/app/build.gradle.kts
       - name: Build APK
         env:
           CARGO_PROFILE_DEV_DEBUG: "0"
-        run: pnpm tauri android build --${{ inputs.build_type || 'debug' }} --apk --target ${{ inputs.target || 'aarch64' }} --ci
+        run: |
+          FLAGS=""
+          if [ "${{ inputs.build_type || 'debug' }}" = "debug" ]; then FLAGS="--debug"; fi
+          pnpm tauri android build $FLAGS --apk --target ${{ inputs.target || 'aarch64' }} --ci
       - uses: actions/upload-artifact@v4
         with:
           name: hghub-android-${{ inputs.target || 'aarch64' }}-${{ inputs.build_type || 'debug' }}
