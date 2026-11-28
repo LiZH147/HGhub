@@ -44,9 +44,21 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
-      - name: Install Android NDK and platform
-        run: sdkmanager --install "ndk;27.0.12077973" "platforms;android-35" "build-tools;35.0.0"
+      # ubuntu runner 自带 Android SDK。android-actions/setup-android@v3 默认安装已被 Google 下线的
+      # `tools` 包（sdkmanager 报 "Failed to find package 'tools'" 并退出 1），因此直接使用镜像内的 SDK。
+      - name: Prepare Android SDK / NDK
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SDKM="$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager | tail -1)"
+          if [ -z "$SDKM" ]; then
+            echo "::error::No sdkmanager found under $SDK/cmdline-tools; the runner image layout changed."
+            exit 1
+          fi
+          echo "$(dirname "$(dirname "$SDKM")")/bin" >> "$GITHUB_PATH"
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          "$SDKM" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
       - name: Export NDK environment
         run: |
           NDK="$ANDROID_SDK_ROOT/ndk/27.0.12077973"
