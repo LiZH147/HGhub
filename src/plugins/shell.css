@@ -179,7 +179,7 @@
 .hpp-segmented{display:flex;background:var(--p-s1);border-radius:8px;padding:4px;gap:4px;margin-bottom:16px}
 .hpp-segmented button{flex:1;background:transparent;font-size:12px}
 .hpp-segmented button[aria-pressed=true]{background:var(--p-s3);color:var(--p-primary)}
-.hpp-picker-list{display:grid;gap:4px;max-height:320px;overflow:auto;margin-bottom:20px}
+.hpp-picker-list{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;max-height:320px;overflow:auto;margin-bottom:20px}
 .hpp-picker-list label{display:flex;align-items:center;gap:12px;padding:12px 5px;cursor:pointer}
 .hpp-picker-list label>span:nth-child(2){flex:1;min-width:0}
 .hpp-picker-list strong{font-size:13px}
