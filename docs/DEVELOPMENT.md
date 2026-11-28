@@ -59,10 +59,10 @@ certutil -encode hghub-release.jks keystore.b64   # 去掉首尾两行后再填�
 
 | Secret | 内容 |
 | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | keystore 文件的 base64 |
+| `ANDROID_KEY_BASE64` | keystore 文件的 base64 |
 | `ANDROID_KEY_ALIAS` | 上面的 `-alias` 值 |
 | `ANDROID_KEY_PASSWORD` | 该别名的口令 |
-| `ANDROID_STORE_PASSWORD` | keystore 口令 |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore 口令 |
 
 工作流会解码 keystore 并用 `scripts/android-signing.py` 给生成的 gradle 工程注入 `signingConfigs`（`src-tauri/gen/android` 每次重新生成，所以不提交签名配置）。
 
