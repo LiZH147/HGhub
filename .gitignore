@@ -9,6 +9,8 @@ test-results/
 /output/playwright/
 src-tauri/target/
 src-tauri/crates/*/target/
+.cargo-home/
+.tmp/
 src-tauri/gen/
 *.local
 
@@ -28,24 +30,3 @@ Thumbs.db
 *.key
 *.p8
 *.mobileprovision
-*.provisionprofile
-*.pem
-.env
-.env.*
-
-# API
-docs/API.md
-
-
-# Private development baseline; never bundled or published with the client.
-/local-plugins/
-/dist-docs/
-/.playwright-cli/
-
-# Local handoff notes and audit evidence; not public project documentation.
-/handoff.md
-/todo.md
-/docs/handoff.md
-/docs/todo.md
-/docs/plugin-protocol/HANDOFF.md
-/rules/
